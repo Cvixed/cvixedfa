@@ -1,11 +1,12 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import type { Database } from '@/lib/types/database'
+import { getSanitizedSupabaseUrl, getSanitizedSupabaseAnonKey } from './config'
 
 export async function createClient() {
   const cookieStore = await cookies()
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-cvixedfa.supabase.co'
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key'
+  const url = getSanitizedSupabaseUrl()
+  const key = getSanitizedSupabaseAnonKey()
   return createServerClient<Database>(
     url,
     key,

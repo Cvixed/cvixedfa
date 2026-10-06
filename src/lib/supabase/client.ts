@@ -2,9 +2,10 @@
 
 import { createBrowserClient } from '@supabase/ssr'
 import type { Database } from '@/lib/types/database'
+import { getSanitizedSupabaseUrl, getSanitizedSupabaseAnonKey } from './config'
 
 export function createClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-cvixedfa.supabase.co'
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key'
+  const url = getSanitizedSupabaseUrl()
+  const key = getSanitizedSupabaseAnonKey()
   return createBrowserClient<Database>(url, key)
 }
