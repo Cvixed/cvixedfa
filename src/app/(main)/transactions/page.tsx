@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatRupiah } from '@/lib/utils/currency';
 import { formatDateShort } from '@/lib/utils/date';
-import { Plus, Camera, Search, Filter, ArrowUpRight, ArrowDownLeft, Loader2 } from 'lucide-react';
+import { Plus, Camera, Search, ArrowUpRight, ArrowDownLeft, Loader2, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
 
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -15,37 +16,54 @@ export default function TransactionsPage() {
   const [filterType, setFilterType] = useState<'all' | 'expense' | 'income'>('all');
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadTransactions() {
-      try {
-        const res = await fetch('/api/transactions');
-        const data = await res.json();
-        if (data && data.transactions && data.transactions.length > 0) {
-          setTransactions(
-            data.transactions.map((tx: any) => ({
-              id: tx.id,
-              type: tx.type,
-              amount: tx.amount,
-              date: tx.date,
-              category_name: tx.categories?.name || 'Lainnya',
-              category_icon: tx.categories?.icon || (tx.type === 'income' ? '💰' : '💸'),
-              merchant: tx.merchant,
-              note: tx.note,
-              wallet: tx.wallets?.name || 'Dompet',
-            }))
-          );
-        } else {
-          setTransactions([]);
-        }
-      } catch {
+  const loadTransactions = async () => {
+    try {
+      setIsLoading(true);
+      const res = await fetch('/api/transactions');
+      const data = await res.json();
+      if (data && data.transactions && data.transactions.length > 0) {
+        setTransactions(
+          data.transactions.map((tx: any) => ({
+            id: tx.id,
+            type: tx.type,
+            amount: tx.amount,
+            date: tx.date,
+            category_name: tx.categories?.name || 'Lainnya',
+            category_icon: tx.categories?.icon || (tx.type === 'income' ? '💰' : '💸'),
+            merchant: tx.merchant,
+            note: tx.note,
+            wallet: tx.wallets?.name || 'Dompet',
+          }))
+        );
+      } else {
         setTransactions([]);
-      } finally {
-        setIsLoading(false);
       }
+    } catch {
+      setTransactions([]);
+    } finally {
+      setIsLoading(false);
     }
+  };
 
+  useEffect(() => {
     loadTransactions();
   }, []);
+
+  const handleDeleteTransaction = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm('Hapus transaksi ini?')) return;
+    try {
+      const res = await fetch(`/api/transactions?id=${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setTransactions((prev) => prev.filter((t) => t.id !== id));
+        toast.success('Transaksi berhasil dihapus');
+      } else {
+        toast.error('Gagal menghapus transaksi');
+      }
+    } catch {
+      toast.error('Gagal menghapus transaksi');
+    }
+  };
 
   const filtered = transactions.filter((tx) => {
     const matchesSearch =
@@ -60,7 +78,7 @@ export default function TransactionsPage() {
   });
 
   return (
-    <div className="space-y-4 pb-8">
+    <div className="space-y-4 pb-8 max-w-lg mx-auto">
       {/* Header and Actions */}
       <div className="flex items-center justify-between">
         <div>
@@ -73,7 +91,7 @@ export default function TransactionsPage() {
         </div>
         <div className="flex items-center gap-2">
           <Button asChild size="sm" variant="outline" className="rounded-xl h-9">
-            <Link href="/transactions/new?mode=scan">
+            <Link href="/transactions/new">
               <Camera className="w-4 h-4 mr-1 text-primary" />
               Scan
             </Link>
@@ -98,7 +116,7 @@ export default function TransactionsPage() {
             className="pl-9 rounded-xl h-10 bg-card border-border/70"
           />
         </div>
-        <div className="flex rounded-xl bg-muted p-0.5">
+        <div className="flex rounded-xl bg-muted p-0.5 shrink-0">
           <button
             type="button"
             onClick={() => setFilterType('all')}
@@ -147,7 +165,7 @@ export default function TransactionsPage() {
             return (
               <Card
                 key={tx.id}
-                className="rounded-2xl border-border/60 hover:border-border transition-all overflow-hidden"
+                className="rounded-2xl border-border/60 hover:border-border transition-all overflow-hidden group"
               >
                 <CardContent className="p-3.5 flex items-center justify-between">
                   <div className="flex items-center gap-3 min-w-0">
@@ -172,22 +190,32 @@ export default function TransactionsPage() {
                     </div>
                   </div>
 
-                  <div className="text-right shrink-0 ml-3">
-                    <div className="flex items-center justify-end gap-1">
-                      {isIncome ? (
-                        <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-600" />
-                      ) : (
-                        <ArrowUpRight className="w-3.5 h-3.5 text-rose-500" />
-                      )}
-                      <span
-                        className={`text-sm font-bold tracking-tight ${
-                          isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground'
-                        }`}
-                      >
-                        {isIncome ? '+' : '-'}
-                        {formatRupiah(tx.amount)}
-                      </span>
+                  <div className="flex items-center gap-2 shrink-0 ml-3">
+                    <div className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        {isIncome ? (
+                          <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-600" />
+                        ) : (
+                          <ArrowUpRight className="w-3.5 h-3.5 text-rose-500" />
+                        )}
+                        <span
+                          className={`text-sm font-bold tracking-tight ${
+                            isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground'
+                          }`}
+                        >
+                          {isIncome ? '+' : '-'}
+                          {formatRupiah(tx.amount)}
+                        </span>
+                      </div>
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-rose-600 opacity-60 hover:opacity-100 rounded-lg"
+                      onClick={(e) => handleDeleteTransaction(tx.id, e)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

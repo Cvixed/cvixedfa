@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Camera, ArrowLeft, Upload, Sparkles, Check, Loader2 } from 'lucide-react';
+import { Camera, ArrowLeft, Sparkles, Check, Loader2, Wallet } from 'lucide-react';
 import Link from 'next/link';
 import { formatCurrencyInput, formatRupiah, parseRupiah } from '@/lib/utils/currency';
 import { DEFAULT_EXPENSE_CATEGORIES, DEFAULT_INCOME_CATEGORIES } from '@/lib/constants';
@@ -25,6 +25,25 @@ export default function NewTransactionPage() {
   const [isScanning, setIsScanning] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [scanResult, setScanResult] = useState<any>(null);
+
+  const [wallets, setWallets] = useState<any[]>([]);
+  const [selectedWalletId, setSelectedWalletId] = useState<string>('');
+
+  useEffect(() => {
+    async function loadWallets() {
+      try {
+        const res = await fetch('/api/wallets');
+        const data = await res.json();
+        if (data?.wallets && data.wallets.length > 0) {
+          setWallets(data.wallets);
+          setSelectedWalletId(data.wallets[0].id);
+        }
+      } catch (err) {
+        console.error('Failed to load wallets:', err);
+      }
+    }
+    loadWallets();
+  }, []);
 
   const categories = type === 'expense' ? DEFAULT_EXPENSE_CATEGORIES : DEFAULT_INCOME_CATEGORIES;
 
@@ -80,6 +99,8 @@ export default function NewTransactionPage() {
         body: JSON.stringify({
           type,
           amount: numericAmount,
+          category_name: selectedCategory,
+          wallet_id: selectedWalletId || null,
           merchant: merchant || (scanResult?.merchant ?? null),
           note: note || (scanResult?.items ? scanResult.items.map((i: any) => i.name).join(', ') : null),
           date: scanResult?.date || new Date().toISOString().split('T')[0],
@@ -208,7 +229,10 @@ export default function NewTransactionPage() {
           <div className="flex rounded-xl bg-muted p-1">
             <button
               type="button"
-              onClick={() => setType('expense')}
+              onClick={() => {
+                setType('expense');
+                setSelectedCategory('Makan & Minum');
+              }}
               className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
                 type === 'expense'
                   ? 'bg-rose-500 text-white shadow-xs'
@@ -219,7 +243,10 @@ export default function NewTransactionPage() {
             </button>
             <button
               type="button"
-              onClick={() => setType('income')}
+              onClick={() => {
+                setType('income');
+                setSelectedCategory('Gaji');
+              }}
               className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
                 type === 'income'
                   ? 'bg-emerald-600 text-white shadow-xs'
@@ -249,6 +276,33 @@ export default function NewTransactionPage() {
                   />
                 </div>
               </div>
+
+              {/* Wallet Picker */}
+              {wallets.length > 0 && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Pilih Dompet / Sumber Dana</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {wallets.map((w) => {
+                      const isSelected = selectedWalletId === w.id;
+                      return (
+                        <button
+                          key={w.id}
+                          type="button"
+                          onClick={() => setSelectedWalletId(w.id)}
+                          className={`flex items-center gap-1.5 p-2 rounded-xl border text-left text-xs transition-all ${
+                            isSelected
+                              ? 'border-primary bg-primary/10 text-primary font-semibold'
+                              : 'border-border/60 bg-card text-muted-foreground hover:border-border'
+                          }`}
+                        >
+                          <span className="text-base">{w.icon || '💳'}</span>
+                          <span className="truncate">{w.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Merchant / Place */}
               <div className="space-y-1.5">
