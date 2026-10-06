@@ -103,7 +103,7 @@ export function generateTotpToken(secret: string, timestamp: number = Date.now()
 export function verifyTotpToken(
   token: string,
   secret: string,
-  window: number = 2
+  window: number = 4
 ): boolean {
   if (!token || !secret) return false;
   const cleanToken = token.trim();
@@ -112,11 +112,26 @@ export function verifyTotpToken(
   const now = Date.now();
   const step = 30;
 
-  for (let i = -window; i <= window; i++) {
-    const checkTime = now + i * step * 1000;
-    const generated = generateTotpToken(secret, checkTime, step);
-    if (crypto.timingSafeEqual(Buffer.from(cleanToken), Buffer.from(generated))) {
-      return true;
+  // Test multiple secret candidates to handle any scanner behavior:
+  // 1. Normalized (0 -> O, 1 -> L, 8 -> B)
+  // 2. Raw un-normalized (non-base32 stripped)
+  // 3. Raw as-is
+  const candidates = [
+    secret,
+    secret.replace(/0/g, 'O').replace(/1/g, 'L').replace(/8/g, 'B'),
+    secret.replace(/[^A-Za-z2-7]/g, ''),
+  ];
+
+  const uniqueSecrets = Array.from(new Set(candidates));
+
+  for (const s of uniqueSecrets) {
+    if (!s) continue;
+    for (let i = -window; i <= window; i++) {
+      const checkTime = now + i * step * 1000;
+      const generated = generateTotpToken(s, checkTime, step);
+      if (crypto.timingSafeEqual(Buffer.from(cleanToken), Buffer.from(generated))) {
+        return true;
+      }
     }
   }
 

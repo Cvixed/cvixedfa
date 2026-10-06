@@ -49,4 +49,12 @@ describe('Google Authenticator TOTP Logic', () => {
     const isValid = verifyTotpToken(token, rawSecret);
     assert.equal(isValid, true);
   });
+
+  it('verifies candidate even if generated from stripped secret', () => {
+    const rawSecret = 'CVIXEDFA2026TOTPSECRETKEY';
+    const strippedSecret = 'CVIXEDFA226TOTPSECRETKEY';
+    const token = generateTotpToken(strippedSecret);
+    const isValid = verifyTotpToken(token, rawSecret);
+    assert.equal(isValid, true);
+  });
 });
