@@ -10,7 +10,10 @@ export const metadata: Metadata = {
   description: "Your personal financial advisor and tracker",
   manifest: "/manifest.json",
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/favicon.ico", sizes: "32x32" },
+      { url: "/logo.svg", type: "image/svg+xml" },
+    ],
     apple: "/apple-icon.png",
   },
 };
