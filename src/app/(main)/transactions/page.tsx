@@ -15,49 +15,6 @@ export default function TransactionsPage() {
   const [filterType, setFilterType] = useState<'all' | 'expense' | 'income'>('all');
   const [isLoading, setIsLoading] = useState(true);
 
-  const initialFallback = [
-    {
-      id: '1',
-      type: 'expense',
-      amount: 45000,
-      date: new Date().toISOString().split('T')[0],
-      category_name: 'Makan & Minum',
-      category_icon: '🍽️',
-      merchant: 'Warteg Bahari',
-      wallet: 'GoPay',
-    },
-    {
-      id: '2',
-      type: 'expense',
-      amount: 150000,
-      date: new Date().toISOString().split('T')[0],
-      category_name: 'Bensin',
-      category_icon: '⛽',
-      note: 'Pertamax Full Tank',
-      wallet: 'BCA',
-    },
-    {
-      id: '3',
-      type: 'income',
-      amount: 8500000,
-      date: new Date(Date.now() - 86400000 * 2).toISOString().split('T')[0],
-      category_name: 'Gaji',
-      category_icon: '💰',
-      note: 'Gaji Bulanan',
-      wallet: 'BCA',
-    },
-    {
-      id: '4',
-      type: 'expense',
-      amount: 250000,
-      date: new Date(Date.now() - 86400000 * 3).toISOString().split('T')[0],
-      category_name: 'Hiburan & Hangout',
-      category_icon: '🎉',
-      merchant: 'Kopi Kenangan Rest Area',
-      wallet: 'Tunai',
-    },
-  ];
-
   useEffect(() => {
     async function loadTransactions() {
       try {
@@ -78,10 +35,10 @@ export default function TransactionsPage() {
             }))
           );
         } else {
-          setTransactions(initialFallback);
+          setTransactions([]);
         }
       } catch {
-        setTransactions(initialFallback);
+        setTransactions([]);
       } finally {
         setIsLoading(false);
       }

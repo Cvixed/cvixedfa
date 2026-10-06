@@ -19,13 +19,13 @@ export default function AdvisorPage() {
       id: '1',
       role: 'assistant',
       content:
-        'Halo! Saya **asisten CvixedFA**, AI financial advisor pribadi Anda. Saya telah menganalisis ringkasan keuangan Anda bulan ini:\n\n• **Pemasukan:** Rp 8.500.000\n• **Pengeluaran:** Rp 5.200.000\n• **Savings Rate:** 39% (Sangat baik! 👍)\n• **Pengeluaran Terbesar:** Makan & Minum (Rp 1.800.000)\n\nAda yang ingin Anda konsultasikan hari ini? Anda bisa menanyakan tentang alokasi gaji, dana darurat, atau strategi mencapai goals Anda.',
+        'Halo! Saya **asisten CvixedFA**, AI financial advisor pribadi Anda.\n\nSaya siap membantu menganalisis arus kas keuangan Anda, memprioritaskan dana darurat, mengalokasikan tabungan untuk bensin & servis berkala kendaraan, serta merencanakan strategi finansial berbasis data nyata Anda.\n\nAda yang ingin Anda tanyakan hari ini?',
     },
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSend = (textToSend?: string) => {
+  const handleSend = async (textToSend?: string) => {
     const text = textToSend || input;
     if (!text.trim() || isLoading) return;
 
@@ -39,30 +39,34 @@ export default function AdvisorPage() {
     setInput('');
     setIsLoading(true);
 
-    // Call /api/ai/chat or fallback gracefully
-    setTimeout(() => {
-      let responseText = '';
-      if (text.toLowerCase().includes('dana darurat')) {
-        responseText =
-          'Berdasarkan pengeluaran bulanan Anda sebesar **Rp 5.200.000**:\n\n• **Target Ideal (6 bulan):** Rp 31.200.000\n• **Saat ini terkumpul:** Rp 15.000.000 (48%)\n• **Kekurangan:** Rp 16.200.000\n\n💡 **Rekomendasi:**\nDengan sisa arus kas bulanan Anda saat ini (~Rp 3.300.000), Anda dapat mengalokasikan **Rp 1.500.000/bulan** ke Dana Darurat di Reksa Dana Pasar Uang (likuid & imbal hasil 4-5% p.a.). Target akan tercapai dalam **~11 bulan**.\n\n⚠️ *Ini adalah edukasi keuangan, bukan nasihat keuangan berlisensi. CvixedFA tidak menjamin hasil investasi.*';
-      } else if (text.toLowerCase().includes('alokasi') || text.toLowerCase().includes('gaji')) {
-        responseText =
-          'Rekomendasi alokasi gaji bulanan Anda (**Rp 8.500.000**) berdasarkan kerangka 50/30/20 yang disesuaikan:\n\n1. **Kebutuhan Pokok (50%):** Rp 4.250.000 (Makan, bensin, utilitas)\n2. **Keinginan & Hangout (20%):** Rp 1.700.000\n3. **Tabungan & Goals (30%):** Rp 2.550.000\n   - Sinking funds mobil (Pajak + Servis): Rp 650.000\n   - Dana Darurat: Rp 1.500.000\n   - Investasi/Lainnya: Rp 400.000\n\n⚠️ *Ini adalah edukasi keuangan, bukan nasihat keuangan berlisensi. CvixedFA tidak menjamin hasil investasi.*';
-      } else {
-        responseText =
-          `Terima kasih atas pertanyaannya mengenai "${text}". Berdasarkan profil dan transaksi keuangan Anda, fokus utama saat ini sebaiknya menjaga rasio pengeluaran konsumtif di bawah 60% dan memastikan sinking funds untuk pajak mobil serta dana darurat tetap berjalan rutin setiap bulan.\n\n⚠️ *Ini adalah edukasi keuangan, bukan nasihat keuangan berlisensi. CvixedFA tidak menjamin hasil investasi.*`;
-      }
-
+    try {
+      const res = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text }),
+      });
+      const data = await res.json();
+      const reply = data.reply || data.error || 'Maaf, terjadi kendala saat memproses konsultasi.';
       setMessages((prev) => [
         ...prev,
         {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: responseText,
+          content: reply,
         },
       ]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: 'Maaf, gagal menghubungi asisten CvixedFA. Periksa koneksi Anda.',
+        },
+      ]);
+    } finally {
       setIsLoading(false);
-    }, 900);
+    }
   };
 
   return (

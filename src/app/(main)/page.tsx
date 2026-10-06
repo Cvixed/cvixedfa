@@ -12,104 +12,29 @@ import { Camera, Plus } from 'lucide-react';
 
 export default function DashboardPage() {
   const [summary, setSummary] = useState({
-    income: 8500000,
-    expense: 5200000,
-    previousIncome: 7800000,
-    previousExpense: 4900000,
+    income: 0,
+    expense: 0,
+    previousIncome: 0,
+    previousExpense: 0,
   });
 
-  const [categoryExpenses, setCategoryExpenses] = useState([
-    { name: 'Makan & Minum', value: 1800000, color: '#F97316' },
-    { name: 'Transport', value: 850000, color: '#3B82F6' },
-    { name: 'Bensin', value: 650000, color: '#EF4444' },
-    { name: 'Belanja', value: 920000, color: '#EC4899' },
-    { name: 'Tagihan & Utilitas', value: 580000, color: '#F59E0B' },
-    { name: 'Lainnya', value: 400000, color: '#6B7280' },
-  ]);
-
-  const [monthlyTrend] = useState([
-    { month: 'Mei', income: 7500000, expense: 4800000 },
-    { month: 'Jun', income: 8000000, expense: 5100000 },
-    { month: 'Jul', income: 7800000, expense: 4900000 },
-    { month: 'Agu', income: 8200000, expense: 5300000 },
-    { month: 'Sep', income: 7900000, expense: 4700000 },
-    { month: 'Okt', income: 8500000, expense: 5200000 },
-  ]);
-
-  const [goals, setGoals] = useState([
-    {
-      id: '1',
-      name: 'Pajak Mobil (PKB)',
-      icon: '📋',
-      color: '#6366F1',
-      current_amount: 2400000,
-      target_amount: 4000000,
-      status: 'on_track',
-      target_date: '2025-08-15',
-    },
-    {
-      id: '2',
-      name: 'Servis Berkala Mobil',
-      icon: '🔧',
-      color: '#8B5CF6',
-      current_amount: 1500000,
-      target_amount: 3000000,
-      status: 'behind',
-      target_date: '2025-06-01',
-    },
-    {
-      id: '3',
-      name: 'Dana Darurat (6x Pengeluaran)',
-      icon: '🆘',
-      color: '#EF4444',
-      current_amount: 15000000,
-      target_amount: 31200000,
-      status: 'on_track',
-    },
-  ]);
-
-  const [recentTransactions, setRecentTransactions] = useState([
-    {
-      id: '1',
-      type: 'expense',
-      amount: 45000,
-      date: new Date().toISOString().split('T')[0],
-      category_name: 'Makan & Minum',
-      category_icon: '🍽️',
-      merchant: 'Warteg Bahari',
-    },
-    {
-      id: '2',
-      type: 'expense',
-      amount: 150000,
-      date: new Date().toISOString().split('T')[0],
-      category_name: 'Bensin',
-      category_icon: '⛽',
-      note: 'Pertamax Full Tank',
-    },
-    {
-      id: '3',
-      type: 'income',
-      amount: 8500000,
-      date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
-      category_name: 'Gaji',
-      category_icon: '💰',
-      note: 'Gaji Bulanan',
-    },
-  ]);
+  const [categoryExpenses, setCategoryExpenses] = useState<{ name: string; value: number; color: string }[]>([]);
+  const [monthlyTrend, setMonthlyTrend] = useState<{ month: string; income: number; expense: number }[]>([]);
+  const [goals, setGoals] = useState<any[]>([]);
+  const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
 
   useEffect(() => {
     async function loadLiveData() {
       try {
         const [txRes, goalsRes] = await Promise.all([
-          fetch('/api/transactions?limit=10'),
+          fetch('/api/transactions?limit=20'),
           fetch('/api/goals'),
         ]);
 
         const txData = await txRes.json();
         const goalsData = await goalsRes.json();
 
-        if (txData?.transactions?.length) {
+        if (txData?.transactions && txData.transactions.length > 0) {
           const list = txData.transactions;
           setRecentTransactions(
             list.slice(0, 5).map((t: any) => ({
@@ -132,20 +57,48 @@ export default function DashboardPage() {
             .filter((t: any) => t.type === 'expense')
             .reduce((s: number, t: any) => s + Number(t.amount), 0);
 
-          if (totalInc > 0 || totalExp > 0) {
-            setSummary((prev) => ({
-              ...prev,
-              income: totalInc || prev.income,
-              expense: totalExp || prev.expense,
-            }));
-          }
+          setSummary({
+            income: totalInc,
+            expense: totalExp,
+            previousIncome: 0,
+            previousExpense: 0,
+          });
+
+          // Group expenses by category
+          const expenseMap: Record<string, { value: number; color: string }> = {};
+          list
+            .filter((t: any) => t.type === 'expense')
+            .forEach((t: any) => {
+              const name = t.categories?.name || 'Lainnya';
+              const color = t.categories?.color || '#0F766E';
+              if (!expenseMap[name]) {
+                expenseMap[name] = { value: 0, color };
+              }
+              expenseMap[name].value += Number(t.amount);
+            });
+
+          const catList = Object.entries(expenseMap).map(([name, item]) => ({
+            name,
+            value: item.value,
+            color: item.color,
+          }));
+          setCategoryExpenses(catList);
+        } else {
+          setRecentTransactions([]);
+          setCategoryExpenses([]);
+          setSummary({ income: 0, expense: 0, previousIncome: 0, previousExpense: 0 });
         }
 
-        if (goalsData?.goals?.length) {
+        if (goalsData?.goals && goalsData.goals.length > 0) {
           setGoals(goalsData.goals);
+        } else {
+          setGoals([]);
         }
       } catch (e) {
-        // Fallback to initial sample
+        setRecentTransactions([]);
+        setCategoryExpenses([]);
+        setGoals([]);
+        setSummary({ income: 0, expense: 0, previousIncome: 0, previousExpense: 0 });
       }
     }
 

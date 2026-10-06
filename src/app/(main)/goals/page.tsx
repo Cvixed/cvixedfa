@@ -15,38 +15,6 @@ export default function GoalsPage() {
   const [goals, setGoals] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const initialFallback = [
-    {
-      id: '1',
-      name: 'Pajak Kendaraan (PKB)',
-      icon: '📋',
-      color: '#6366F1',
-      current_amount: 2400000,
-      target_amount: 4000000,
-      status: 'on_track',
-      target_date: '2025-08-15',
-    },
-    {
-      id: '2',
-      name: 'Servis Berkala Mobil',
-      icon: '🔧',
-      color: '#8B5CF6',
-      current_amount: 1500000,
-      target_amount: 3000000,
-      status: 'behind',
-      target_date: '2025-06-01',
-    },
-    {
-      id: '3',
-      name: 'Dana Darurat (6x Pengeluaran)',
-      icon: '🆘',
-      color: '#EF4444',
-      current_amount: 15000000,
-      target_amount: 31200000,
-      status: 'on_track',
-    },
-  ];
-
   useEffect(() => {
     async function loadGoals() {
       try {
@@ -55,10 +23,10 @@ export default function GoalsPage() {
         if (data && data.goals && data.goals.length > 0) {
           setGoals(data.goals);
         } else {
-          setGoals(initialFallback);
+          setGoals([]);
         }
       } catch {
-        setGoals(initialFallback);
+        setGoals([]);
       } finally {
         setIsLoading(false);
       }
