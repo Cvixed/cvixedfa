@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ShieldCheck, QrCode, Lock, ArrowRight, Copy, Check, AlertCircle } from 'lucide-react';
+import { ShieldCheck, QrCode, Lock, ArrowRight, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function TotpAuthPage() {
@@ -22,7 +22,6 @@ export default function TotpAuthPage() {
     uri: string;
     isConfigured: boolean;
   } | null>(null);
-  const [copied, setCopied] = useState(false);
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -126,13 +125,6 @@ export default function TotpAuthPage() {
     }
   };
 
-  const handleCopySecret = () => {
-    if (!setupData?.secret) return;
-    navigator.clipboard.writeText(setupData.secret);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-    toast.success('Secret key disalin ke clipboard');
-  };
 
   return (
     <div className="min-h-dvh flex items-center justify-center p-4 bg-background">
@@ -261,30 +253,10 @@ export default function TotpAuthPage() {
               />
             </div>
 
-            <div className="space-y-1.5 text-xs">
-              <span className="font-semibold text-foreground">Secret Key (Input Manual):</span>
-              <div className="flex items-center justify-between p-2 rounded-xl bg-card border font-mono text-[11px] select-all">
-                <span className="truncate mr-2 font-bold">{setupData.secret}</span>
-                <button
-                  type="button"
-                  onClick={handleCopySecret}
-                  className="p-1 hover:bg-muted rounded-lg text-primary shrink-0"
-                >
-                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            <div className="text-[11px] text-muted-foreground leading-relaxed space-y-1 bg-card/60 p-3 rounded-xl border border-border/50">
-              <p className="font-semibold text-foreground">Langkah:</p>
-              <ol className="list-decimal list-inside space-y-0.5">
-                <li>Buka Google Authenticator di HP Anda.</li>
-                <li>Tap <strong>+</strong> lalu <strong>Scan QR code</strong> di atas.</li>
-                <li>Simpan kode rahasia di file <code>.env.local</code>:</li>
-              </ol>
-              <code className="block mt-1 font-mono text-[10px] bg-muted p-1.5 rounded-lg text-foreground font-bold">
-                APP_TOTP_SECRET={setupData.secret}
-              </code>
+            <div className="text-center bg-card/60 p-3 rounded-xl border border-border/50">
+              <p className="text-xs text-muted-foreground">
+                Buka aplikasi Google Authenticator di HP Anda, tap <strong className="text-foreground">+</strong> lalu pilih <strong className="text-foreground">Scan QR code</strong> untuk menambahkan CvixedFA.
+              </p>
             </div>
           </Card>
         )}

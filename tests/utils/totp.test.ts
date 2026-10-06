@@ -41,4 +41,12 @@ describe('Google Authenticator TOTP Logic', () => {
     assert.ok(uri.includes('secret=JBSWY3DPEHPK3PXP'));
     assert.ok(uri.includes('issuer=CvixedFA'));
   });
+
+  it('normalizes 0 to O in secret for 100% Google Authenticator compatibility', () => {
+    const rawSecret = 'CVIXEDFA2026TOTPSECRETKEY';
+    const normalizedSecret = 'CVIXEDFA2O26TOTPSECRETKEY';
+    const token = generateTotpToken(normalizedSecret);
+    const isValid = verifyTotpToken(token, rawSecret);
+    assert.equal(isValid, true);
+  });
 });

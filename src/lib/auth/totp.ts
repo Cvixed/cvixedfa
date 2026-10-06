@@ -7,7 +7,14 @@ const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
  * Decode Base32 string to Buffer
  */
 export function base32Decode(base32: string): Buffer {
-  const cleaned = base32.toUpperCase().replace(/=+$/, '').replace(/\s+/g, '');
+  const cleaned = base32
+    .toUpperCase()
+    .replace(/=+$/, '')
+    .replace(/0/g, 'O')
+    .replace(/1/g, 'L')
+    .replace(/8/g, 'B')
+    .replace(/\s+/g, '')
+    .replace(/-/g, '');
   let bits = 0;
   let value = 0;
   const bytes: number[] = [];
@@ -96,7 +103,7 @@ export function generateTotpToken(secret: string, timestamp: number = Date.now()
 export function verifyTotpToken(
   token: string,
   secret: string,
-  window: number = 1
+  window: number = 2
 ): boolean {
   if (!token || !secret) return false;
   const cleanToken = token.trim();

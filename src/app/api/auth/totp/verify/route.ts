@@ -25,8 +25,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Verify 6-digit code with +/- 1 step tolerance (60 seconds leeway)
-    const isValid = verifyTotpToken(code, secret, 1);
+    // Verify 6-digit code with +/- 2 step tolerance (60 seconds leeway)
+    const isValid = verifyTotpToken(code, secret, 2);
 
     if (!isValid) {
       return NextResponse.json(
