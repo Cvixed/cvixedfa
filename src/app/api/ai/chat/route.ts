@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const model = getGeminiModel('gemini-2.0-flash');
+    const model = getGeminiModel();
     const prompt = buildAdvisorPromptWithContext(message, context || {});
 
     const result = await model.generateContent(prompt);

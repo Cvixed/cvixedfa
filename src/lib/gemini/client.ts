@@ -13,13 +13,15 @@ if (!apiKey) {
 
 export const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
-export function getGeminiModel(modelName: string = 'gemini-2.0-flash') {
+const defaultModelName = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+
+export function getGeminiModel(modelName: string = defaultModelName) {
   if (!genAI) {
     throw new Error('Gemini API key is not configured');
   }
   return genAI.getGenerativeModel({ model: modelName });
 }
 
-export function getGeminiVisionModel() {
-  return getGeminiModel('gemini-2.0-flash');
+export function getGeminiVisionModel(modelName: string = defaultModelName) {
+  return getGeminiModel(modelName);
 }
