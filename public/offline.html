@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CvixedFA - Offline</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0C0A09;
+      color: #FAFAF9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 1.5rem;
+      text-align: center;
+    }
+    .container { max-width: 400px; }
+    .icon {
+      width: 80px; height: 80px;
+      margin: 0 auto 1.5rem;
+      background: #134E4A;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+    }
+    h1 { font-size: 1.5rem; margin-bottom: 0.75rem; color: #2DD4BF; }
+    p { color: #A8A29E; line-height: 1.6; margin-bottom: 1.5rem; }
+    button {
+      background: #0F766E;
+      color: white;
+      border: none;
+      padding: 0.75rem 2rem;
+      border-radius: 12px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #0D9488; }
+    button:active { background: #115E59; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">📡</div>
+    <h1>Anda Sedang Offline</h1>
+    <p>CvixedFA membutuhkan koneksi internet untuk menyinkronkan data keuangan Anda. Periksa koneksi dan coba lagi.</p>
+    <button onclick="window.location.reload()">Coba Lagi</button>
+  </div>
+</body>
+</html>
