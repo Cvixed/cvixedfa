@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
         user_id: OWNER_USER_ID,
         name: name.trim(),
         type,
-        icon: icon || '💳',
+        icon: icon || (type === 'bank' ? '🏦' : type === 'ewallet' ? '📱' : type === 'cash' ? '💵' : '💳'),
         color: color || '#0F766E',
         initial_balance: Number(initial_balance) || 0,
         is_active: true,
@@ -51,6 +51,31 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ success: true, wallet: data });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'Wallet ID is required' }, { status: 400 });
+    }
+
+    const supabase = createAdminClient();
+    const { error } = await supabase
+      .from('wallets')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

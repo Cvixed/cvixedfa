@@ -308,9 +308,16 @@ export interface Database {
           id: string
           user_id: string
           name: string
-          brand: string | null
-          model: string | null
+          plate_number: string | null
+          type: 'car' | 'motorcycle' | 'other'
           year: number | null
+          current_odometer: number
+          tax_due_date: string | null
+          insurance_due_date: string | null
+          service_interval_km: number
+          service_interval_months: number
+          last_service_date: string | null
+          last_service_odometer: number
           created_at: string
           updated_at: string
         }
@@ -318,9 +325,16 @@ export interface Database {
           id?: string
           user_id: string
           name: string
-          brand?: string | null
-          model?: string | null
+          plate_number?: string | null
+          type?: 'car' | 'motorcycle' | 'other'
           year?: number | null
+          current_odometer?: number
+          tax_due_date?: string | null
+          insurance_due_date?: string | null
+          service_interval_km?: number
+          service_interval_months?: number
+          last_service_date?: string | null
+          last_service_odometer?: number
           created_at?: string
           updated_at?: string
         }
@@ -328,9 +342,16 @@ export interface Database {
           id?: string
           user_id?: string
           name?: string
-          brand?: string | null
-          model?: string | null
+          plate_number?: string | null
+          type?: 'car' | 'motorcycle' | 'other'
           year?: number | null
+          current_odometer?: number
+          tax_due_date?: string | null
+          insurance_due_date?: string | null
+          service_interval_km?: number
+          service_interval_months?: number
+          last_service_date?: string | null
+          last_service_odometer?: number
           created_at?: string
           updated_at?: string
         }
@@ -338,31 +359,40 @@ export interface Database {
       vehicle_services: {
         Row: {
           id: string
+          user_id: string
           vehicle_id: string
-          service_date: string
-          description: string
+          date: string
+          odometer: number | null
+          service_type: string
           cost: number
-          mileage: number | null
+          note: string | null
+          transaction_id: string | null
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
+          user_id: string
           vehicle_id: string
-          service_date: string
-          description: string
-          cost: number
-          mileage?: number | null
+          date?: string
+          odometer?: number | null
+          service_type: string
+          cost?: number
+          note?: string | null
+          transaction_id?: string | null
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
+          user_id?: string
           vehicle_id?: string
-          service_date?: string
-          description?: string
+          date?: string
+          odometer?: number | null
+          service_type?: string
           cost?: number
-          mileage?: number | null
+          note?: string | null
+          transaction_id?: string | null
           created_at?: string
           updated_at?: string
         }
