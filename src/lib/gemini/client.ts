@@ -90,3 +90,56 @@ export async function generateVisionJsonWithFallback(
 
   throw lastError || new Error('All Gemini models failed to process vision request');
 }
+
+/**
+ * Robust JSON generation runner with automatic fallback and timeout.
+ */
+export async function generateJsonWithFallback(
+  prompt: string | any[],
+  timeoutMs = 20000
+) {
+  if (!genAI) {
+    throw new Error('Gemini API key is not configured');
+  }
+
+  const candidateModels = [
+    DEFAULT_AI_MODEL,
+    'gemini-3.5-flash-lite',
+    'gemini-3.5-flash',
+    'gemini-3.8-flash',
+  ].filter((m, i, arr): m is string => Boolean(m) && arr.indexOf(m) === i);
+
+  let lastError: any = null;
+
+  for (const modelName of candidateModels) {
+    try {
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        generationConfig: {
+          temperature: 0.1,
+          responseMimeType: 'application/json',
+        },
+      });
+
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(
+          () => reject(new Error(`Timeout calling Gemini ${modelName} after ${timeoutMs}ms`)),
+          timeoutMs
+        )
+      );
+
+      const result = (await Promise.race([
+        model.generateContent(prompt),
+        timeoutPromise,
+      ])) as any;
+
+      const text = result.response.text();
+      return { text, modelUsed: modelName };
+    } catch (err: any) {
+      console.warn(`[Gemini Fallback] Model ${modelName} failed or timed out:`, err?.message);
+      lastError = err;
+    }
+  }
+
+  throw lastError || new Error('All Gemini models failed to process JSON request');
+}

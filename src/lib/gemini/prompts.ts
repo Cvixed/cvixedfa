@@ -97,6 +97,8 @@ export function buildAdvisorPromptWithContext(
     goals?: { name: string; target: number; current: number; target_date?: string }[];
     budgets?: { category: string; budget: number; spent: number }[];
     debts?: { name: string; remaining: number; interest_rate?: number }[];
+    wallets?: { name: string; type: string }[];
+    vehicles?: { name: string; plate_number?: string }[];
   }
 ): string {
   const parts: string[] = [];
@@ -129,8 +131,18 @@ ${s.monthly_trend.map(m => `- ${m.month}: Pemasukan Rp ${m.income.toLocaleString
   }
 
   if (context.goals?.length) {
-    parts.push(`## GOALS TABUNGAN
+    parts.push(`## GOALS TABUNGAN SAAT INI
 ${context.goals.map(g => `- ${g.name}: Rp ${g.current.toLocaleString('id-ID')} / Rp ${g.target.toLocaleString('id-ID')}${g.target_date ? ` (target: ${g.target_date})` : ''}`).join('\n')}`);
+  }
+
+  if (context.wallets?.length) {
+    parts.push(`## DOMPET TERSEDIA
+${context.wallets.map(w => `- ${w.name} (${w.type})`).join('\n')}`);
+  }
+
+  if (context.vehicles?.length) {
+    parts.push(`## KENDARAAN TERDAFTAR
+${context.vehicles.map(v => `- ${v.name} ${v.plate_number ? `(${v.plate_number})` : ''}`).join('\n')}`);
   }
 
   if (context.budgets?.length) {
@@ -145,38 +157,64 @@ ${context.debts.map(d => `- ${d.name}: Rp ${d.remaining.toLocaleString('id-ID')}
 
   const contextBlock = parts.length > 0
     ? `\n\n--- DATA PENGGUNA (KONTEKS) ---\n${parts.join('\n\n')}\n--- AKHIR DATA ---\n\n`
-    : '\n\n(Belum ada data keuangan pengguna. Tanyakan informasi yang diperlukan.)\n\n';
+    : '\n\n(Belum ada data konteks awal.)\n\n';
 
-  return `${ADVISOR_SYSTEM_PROMPT}${contextBlock}Pesan pengguna: ${userMessage}`;
+  return `Kamu adalah asisten CvixedFA, AI Financial Advisor & Assistant pribadi berbahasa Indonesia yang agentic dan otomatis.
+Tugasmu:
+1. Analisis pesan pengguna secara mendalam.
+2. Identifikasi apakah pesan mengandung aksi/entitas finansial yang perlu disimpan ke database. Pengguna dapat memberikan SATU ATAU BANYAK AKSI SEKALIGUS dalam satu kalimat (misal: belanja barang + cicilan/bensin paylater + target tabungan baru)!
+3. Ekstrak seluruh aksi ke dalam array "actions". Jika pengguna hanya bertanya/konsultasi biasa tanpa aksi pencatatan, isi "actions": [].
+4. Berikan respon edukatif, ramah, dan solutif dalam "reply".
+
+Kategori pengeluaran di sistem:
+- "Makan & Minum"
+- "Transport"
+- "Bensin"
+- "Servis & Perawatan Mobil"
+- "Pajak & Asuransi Kendaraan"
+- "Belanja"
+- "Tagihan & Utilitas"
+- "Kesehatan"
+- "Hiburan & Hangout"
+- "Pendidikan"
+- "Langganan"
+- "Lainnya"
+
+Kategori pemasukan di sistem:
+- "Gaji", "Freelance", "Bonus", "Hadiah", "Investasi", "Lainnya"
+
+FORMAT JSON YANG WAJIB DIHASILKAN:
+{
+  "actions": [
+    // Array aksi:
+    // 1. Transaksi (pembelian/pemasukan/pengeluaran):
+    //    { "type": "create_transaction", "data": { "transaction_type": "expense" | "income", "amount": number, "category_name": string, "note": string, "merchant": string|null, "wallet_name": string|null, "date": "YYYY-MM-DD"|null } }
+    // 2. Goal Tabungan:
+    //    { "type": "create_goal", "data": { "name": string, "target_amount": number, "icon": string, "color": string, "target_date": "YYYY-MM-DD"|null } }
+    // 3. Dompet / Rekening:
+    //    { "type": "create_wallet", "data": { "name": string, "wallet_type": "cash" | "bank" | "ewallet" | "other", "initial_balance": number } }
+    // 4. Kendaraan:
+    //    { "type": "create_vehicle", "data": { "name": string, "plate_number": string|null, "vehicle_type": "car" | "motorcycle" | "other", "year": number|null, "odometer": number|null, "tax_due_date": string|null } }
+    // 5. Servis Kendaraan:
+    //    { "type": "create_vehicle_service", "data": { "vehicle_name": string|null, "service_type": string, "cost": number, "odometer": number|null, "note": string|null } }
+    // 6. Anggaran Kategori:
+    //    { "type": "create_budget", "data": { "category_name": string, "amount": number } }
+    // 7. Utang / PayLater / Cicilan:
+    //    { "type": "create_debt", "data": { "name": string, "amount": number, "person_name": string|null, "note": string|null } }
+  ],
+  "reply": "Pesan balasan ramah & terstruktur dalam Bahasa Indonesia yang merangkum apa saja yang telah dicatat (dengan rincian kategori dan nominal Rupiah Rp x.xxx.xxx), memberikan tips finansial ringkas, dan menyertakan disclaimer: '⚠️ CvixedFA memberikan edukasi keuangan, bukan nasihat keuangan berlisensi.'"
 }
 
-export const ADVISOR_FUNCTION_DECLARATIONS = [
-  {
-    name: 'create_transaction',
-    description: 'Mencatat transaksi baru (pemasukan atau pengeluaran). Gunakan saat user meminta untuk mencatat transaksi lewat chat.',
-    parameters: {
-      type: 'object' as const,
-      properties: {
-        type: { type: 'string', enum: ['income', 'expense'], description: 'Jenis transaksi' },
-        amount: { type: 'number', description: 'Nominal dalam Rupiah (integer)' },
-        category_name: { type: 'string', description: 'Nama kategori' },
-        note: { type: 'string', description: 'Catatan opsional' },
-        date: { type: 'string', description: 'Tanggal format YYYY-MM-DD, default hari ini' },
-      },
-      required: ['type', 'amount', 'category_name'],
-    },
-  },
-  {
-    name: 'create_goal',
-    description: 'Membuat goal tabungan baru. Gunakan saat user meminta untuk membuat target tabungan.',
-    parameters: {
-      type: 'object' as const,
-      properties: {
-        name: { type: 'string', description: 'Nama goal' },
-        target_amount: { type: 'number', description: 'Target nominal dalam Rupiah' },
-        target_months: { type: 'number', description: 'Berapa bulan untuk mencapai target' },
-      },
-      required: ['name', 'target_amount'],
-    },
-  },
-];
+ATURAN PENTING:
+- Jika pengguna menyebutkan membeli menggunakan PayLater (contoh: "shopeepaylater bensin 600rb"), buat:
+  1. "create_transaction" (pengeluaran bensin agar tercatat di pengeluaran)
+  2. "create_debt" (utang ShopeePayLater agar tercatat sebagai kewajiban)
+  3. Dan jika dikatakan "sebulan" atau "anggaran", sertakan juga "create_budget" untuk kategori Bensin!
+- Jika pengguna menyebutkan "goals", buat "create_goal". Pilih icon emoji yang relevan (misal figurine ironman: 🤖, motor: 🏍️, gadget: 📱, mobil: 🚗).
+- Nominal harus selalu integer positif Rupiah tanpa simbol titik/koma (misal 50rb -> 50000, 600rb -> 600000, 1jt -> 1000000).
+
+${contextBlock}
+Pesan Pengguna:
+"${userMessage}"
+`;
+}
