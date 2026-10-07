@@ -52,14 +52,73 @@ export default function NewTransactionPage() {
     setRawAmount(formatted);
   };
 
+async function compressImageForOcr(file: File): Promise<File> {
+  if (!file.type.startsWith('image/') || file.type === 'image/svg+xml' || file.type === 'image/gif') {
+    return file;
+  }
+
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const maxDimension = 1200; // Optimal for sharp receipt text & ultra-light payload
+        let { width, height } = img;
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(file);
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            if (blob && blob.size < file.size) {
+              const compressedFile = new File([blob], 'receipt.jpg', {
+                type: 'image/jpeg',
+                lastModified: Date.now(),
+              });
+              resolve(compressedFile);
+            } else {
+              resolve(file);
+            }
+          },
+          'image/jpeg',
+          0.82
+        );
+      };
+      img.onerror = () => resolve(file);
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = () => resolve(file);
+    reader.readAsDataURL(file);
+  });
+}
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setIsScanning(true);
     try {
+      // Compress in browser: reduces 10MB down to ~200KB for instant upload
+      const fileToUpload = await compressImageForOcr(file);
+
       const formData = new FormData();
-      formData.append('image', file);
+      formData.append('image', fileToUpload);
 
       const res = await fetch('/api/ai/ocr', {
         method: 'POST',
@@ -81,6 +140,7 @@ export default function NewTransactionPage() {
       toast.error('Gagal memproses struk.');
     } finally {
       setIsScanning(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 

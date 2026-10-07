@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getGeminiVisionModel } from '@/lib/gemini/client';
+import { generateVisionJsonWithFallback } from '@/lib/gemini/client';
 import { OCR_SYSTEM_PROMPT } from '@/lib/gemini/prompts';
+
+export const maxDuration = 30; // Max execution duration for Vercel
 
 export async function POST(req: NextRequest) {
   try {
@@ -40,9 +42,7 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(bytes);
     const base64Data = buffer.toString('base64');
 
-    const model = getGeminiVisionModel();
-
-    const result = await model.generateContent([
+    const { text, modelUsed } = await generateVisionJsonWithFallback([
       {
         inlineData: {
           mimeType: file.type || 'image/jpeg',
@@ -54,15 +54,17 @@ export async function POST(req: NextRequest) {
       },
     ]);
 
-    const response = await result.response;
-    const rawText = response.text().trim();
+    const rawText = text.trim();
 
-    // Parse JSON safely from markdown codeblock if returned
+    // Parse JSON safely from direct JSON or markdown codeblock
     const jsonMatch = rawText.match(/```(?:json)?([\s\S]*?)```/) || [null, rawText];
     const cleanedJson = (jsonMatch[1] || rawText).trim();
     const parsedData = JSON.parse(cleanedJson);
 
-    return NextResponse.json(parsedData);
+    return NextResponse.json({
+      ...parsedData,
+      _model: modelUsed,
+    });
   } catch (error: any) {
     console.error('OCR Error:', error);
     return NextResponse.json(
